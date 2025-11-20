@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+
+	<head>
+		<meta charset="UTF-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1.0">
+		<title>Document</title>
+		<style>
+			@font-face {
+				font-family: Minecraft;
+				src: url('MinecraftiaCZSK.ttf');
+			}
+
+			body {
+				--ratio: 0.5;
+				background: #222;
+				font: 100% Minecraft, monospace;
+				color: white;
+				font-size: calc(40px * var(--ratio));
+				padding: 0;
+				margin: 0;
+			}
+
+			.bar {
+				width: calc(1400px * var(--ratio));
+				height: calc(60px * var(--ratio));
+				margin-bottom: calc(20px * var(--ratio));
+				position: relative;
+				background: rgba(0, 0, 0, 0.58);
+			}
+
+			.fill {
+				background: rgba(0, 255, 0, 0.8);
+				width: 100%;
+				height: 100%;
+				position: absolute;
+				transition: width 0.4s ease;
+			}
+
+			.text {
+				position: absolute;
+				left: calc(10px * var(--ratio));
+				/* top: 4px; */
+				line-height: calc(56px * var(--ratio));
+				white-space: nowrap;
+			}
+
+			.percentage {
+				position: absolute;
+				right: calc(10px * var(--ratio));
+				/* top: 4px; */
+				line-height: calc(56px * var(--ratio));
+			}
+
+			.container {
+				margin: calc(0px * var(--ratio));
+				/* margin-top: calc(60px * var(--ratio)); */
+				position: relative;
+				width: calc(1400px * var(--ratio));
+				height: calc(380px * var(--ratio));
+			}
+
+			.title {
+				margin-bottom: calc(6px * var(--ratio));
+			}
+
+			#overlay {
+				position: absolute;
+				top: 0;
+				left: 0;
+				width: 100%;
+				height: 100%;
+				background-color: rgba(0, 0, 0, 0.7);
+				display: flex;
+			}
+
+			.centered {
+				margin: auto;
+				font-size: calc(80px * var(--ratio));
+			}
+
+			.disclaimer {
+				font-size: calc(30px * var(--ratio));
+				margin-top: calc(20px * var(--ratio));
+				/* margin: auto; */
+				color: #fff;
+			}
+		</style>
+	</head>
+
+	<body>
+		<div class="container">
+			<div class="title">Total Votes: <span class="total">0</span></div>
+
+			<div class="bar">
+				<div class="fill" style="width: 50%;"></div>
+				<div class="text"><span class="n">1</span>: <span class="event">Shhh don't make any noise (Spawn Warden)</span></div>
+				<div class="percentage"><span class="perc">0</span> %</div>
+			</div>
+			<div class="bar">
+				<div class="fill" style="width: 30%;"></div>
+				<div class="text"><span class="n">2</span>: <span class="event">Let there be light (Glow Squid)</span></div>
+				<div class="percentage"><span class="perc">0</span> %</div>
+			</div>
+			<div class="bar">
+				<div class="fill" style="width: 20%;"></div>
+				<div class="text"><span class="n">3</span>: <span class="event">Cave update (Axolotl)</span></div>
+				<div class="percentage"><span class="perc">0</span> %</div>
+			</div>
+			<div class="bar">
+				<div class="fill" style="width: 20%;"></div>
+				<div class="text"><span class="n">4</span>: <span class="event">Cave update (Axolotl)</span></div>
+				<div class="percentage"><span class="perc">0</span> %</div>
+			</div>
+			<div id="overlay">
+				<div class="centered">
+					<div id="status">Waiting for Entropy mod</div>
+					<div class="disclaimer">Entropy OBS overlay by MarcusCZ</div>
+				</div>
+			</div>
+		</div>
+		<script>
+			const totalVotes = document.querySelector('.total');
+			const overlay = document.querySelector('#overlay');
+			const votingNumbers = document.querySelectorAll('.n');
+			const votingEvents = document.querySelectorAll('.event');
+			const votingPercentages = document.querySelectorAll('.perc');
+			const votingFills = document.querySelectorAll('.fill');
+			const status = document.querySelector('#status');
+
+			function clear() {
+				overlay.style.display = 'flex';
+				totalVotes.textContent = '0';
+				votingNumbers.forEach((el, index) => {
+					el.textContent = index + 1;
+				});
+				votingEvents.forEach((el, index) => {
+					el.textContent = 'No data';
+				});
+				votingPercentages.forEach((el) => {
+					el.textContent = '0';
+				});
+				votingFills.forEach((el) => {
+					el.style.width = '0%';
+				});
+			}
+
+			clear();
+
+			function unpackARGB(argbInt) {
+				return {
+					a: (argbInt >>> 24) & 0xFF,
+					r: (argbInt >>> 16) & 0xFF,
+					g: (argbInt >>> 8) & 0xFF,
+					b: argbInt & 0xFF
+				};
+			}
+
+			let ws = null;
+			let reconnectDelay = 1000; // 1 sekunda mezi pokusy
+			let isConnected = false;
+
+			function connectWebSocket() {
+				console.log("Attempting to connect to WebSocket...");
+				ws = new WebSocket('ws://localhost:8081');
+	
+				ws.onopen = () => {
+	
+					console.log('Connected to WebSocket server');
+				};
+				ws.onmessage = (event) => {
+					const data = JSON.parse(event.data);
+					overlay.style.display = 'none';
+					totalVotes.textContent = data.t;
+					const color = data.c;
+					const { a, r, g, b } = unpackARGB(color);
+					const clr = `rgba(${r}, ${g}, ${b}, ${a / 255})`;
+					data.e.forEach((e, index) => {
+						votingNumbers[index].textContent = e.n;
+						votingEvents[index].textContent = e.t;
+						votingPercentages[index].textContent = e.p;
+						votingFills[index].style.width = e.p + '%';
+						votingFills[index].style.background = clr;
+					});
+				};
+				ws.onerror = () => {
+					console.warn("WebSocket error");
+					ws.close(); // vyvolá onclose → reconnect
+				};
+	
+				ws.onclose = () => {
+					if (isConnected) {
+						console.warn("WebSocket disconnected, retrying...");
+					} else {
+						console.warn("WebSocket failed to connect, retrying...");
+					}
+	
+					isConnected = false;
+					status.textContent = "Waiting for Entropy mod";
+					status.style.color = "white";
+	
+					clear();
+	
+					setTimeout(connectWebSocket, reconnectDelay);
+				};
+			}
+
+			connectWebSocket();
+		</script>
+	</body>
+
+</html>

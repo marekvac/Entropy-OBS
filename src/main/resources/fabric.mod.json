@@ -1,0 +1,36 @@
+{
+  "schemaVersion": 1,
+  "id": "entropyobs",
+  "version": "${version}",
+  "name": "EntropyOBS",
+  "description": "",
+  "authors": [],
+  "contact": {},
+  "license": "All-Rights-Reserved",
+  "icon": "assets/entropyobs/icon.png",
+  "environment": "client",
+  "entrypoints": {
+    "fabric-datagen": [
+      "me.marcuscz.entropyobs.client.EntropyOBSDataGenerator"
+    ],
+    "client": [
+      "me.marcuscz.entropyobs.client.EntropyOBSClient"
+    ],
+    "main": [
+      "me.marcuscz.entropyobs.EntropyOBS"
+    ]
+  },
+  "mixins": [
+    "entropyobs.mixins.json",
+    {
+      "config": "entropyobs.client.mixins.json",
+      "environment": "client"
+    }
+  ],
+  "depends": {
+    "fabricloader": ">=${loader_version}",
+    "fabric": "*",
+    "minecraft": "${minecraft_version}",
+    "entropy": ">=1.14"
+  }
+}
